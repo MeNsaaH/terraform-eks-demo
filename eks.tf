@@ -24,4 +24,3 @@ resource "null_resource" "update_kubeconfig" {
     command = "aws eks update-kubeconfig --name ${local.cluster_name}"
   }
 }
-

@@ -5,8 +5,8 @@
 module "iam_user" {
   source = "terraform-aws-modules/iam/aws//modules/iam-user"
 
-  name = "testuser@deimos.co.za"
-
+  name    = "testuser@deimos.co.za"
+  pgp_key = "keybase:mensaah"
 }
 
 module "iam_group_admin" {

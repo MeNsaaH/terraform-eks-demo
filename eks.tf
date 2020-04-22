@@ -2,7 +2,7 @@
 # EKS
 ###################################################################################
 module "eks" {
-  source          = "terraform-aws-modules/eks/aws"
+  source          = "./modules/eks"
   cluster_name    = local.cluster_name
   cluster_version = "1.14"
   subnets         = module.vpc.private_subnets

@@ -1,8 +1,17 @@
 ###################################################################################
 # EKS
 ###################################################################################
+
+provider "kubernetes" {
+  host                   = data.aws_eks_cluster.cluster.endpoint
+  cluster_ca_certificate = base64decode(data.aws_eks_cluster.cluster.certificate_authority.0.data)
+  token                  = data.aws_eks_cluster_auth.cluster.token
+  load_config_file       = false
+  version                = "~> 1.9"
+}
+
 module "eks" {
-  source          = "./modules/eks"
+  source          = "terraform-aws-modules/eks/aws"
   cluster_name    = local.cluster_name
   cluster_version = "1.14"
   subnets         = module.vpc.private_subnets
@@ -10,8 +19,9 @@ module "eks" {
 
   worker_groups = [
     {
-      instance_type = "t2.micro"
+      instance_type = "t3.small" # 2CPU, 2GO RAM
       asg_max_size  = 1
+      public_ip     = true
     }
   ]
 }

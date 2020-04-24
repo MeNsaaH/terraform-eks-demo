@@ -3,16 +3,20 @@ terraform {
 }
 
 provider "aws" {
-  region = var.AWS_REGION
+  region = var.aws_region
 }
 
 
 #################################################################################
 # Global
 ##################################################################################
+
 locals {
   project_name = "terraform-trials"
   cluster_name = "${local.project_name}-eks"
+
+  private_subnets = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
+  public_subnets  = ["10.0.4.0/24", "10.0.5.0/24", "10.0.6.0/24"]
 
   tags = {
     managed-by = "terraform"
@@ -24,10 +28,30 @@ data "aws_availability_zones" "available" {}
 #################################################################################
 # Backend
 ##################################################################################
+resource "aws_s3_bucket" "terraform_state" {
+  bucket = "terraform-data-12345"
+  region = var.aws_region
+
+  versioning {
+    enabled = true
+  }
+  server_side_encryption_configuration {
+    rule {
+      apply_server_side_encryption_by_default {
+        sse_algorithm = "AES256"
+      }
+    }
+  }
+
+  #  lifecycle {
+  #    prevent_destroy = true
+  #  }
+}
+
 terraform {
   backend "s3" {
-    bucket = "manasseh-tf-state"
-    key    = "development/trials.tfstate"
+    bucket = "terraform-data-12345"
+    key    = "global/terraform.tfstate"
     region = "us-east-2"
   }
 }
@@ -40,11 +64,12 @@ module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
   version = "~> 2.6"
 
-  name                 = "${local.project_name}-vpc"
-  cidr                 = "10.0.0.0/16"
-  azs                  = data.aws_availability_zones.available.names
-  private_subnets      = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
-  public_subnets       = ["10.0.4.0/24", "10.0.5.0/24", "10.0.6.0/24"]
+  name            = "${local.project_name}-vpc"
+  cidr            = var.vpc-subnet-cidr
+  azs             = data.aws_availability_zones.available.names
+  private_subnets = var.private-subnet-cidr
+  public_subnets  = var.public-subnet-cidr
+
   enable_nat_gateway   = true
   single_nat_gateway   = true
   enable_dns_hostnames = true
@@ -66,7 +91,7 @@ module "iam_user" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-user"
   version = "~> 2.9"
 
-  name    = "testuser@deimos.co.za"
+  name    = "terraformtestuser@deimos.co.za"
   pgp_key = "keybase:mensaah"
 }
 

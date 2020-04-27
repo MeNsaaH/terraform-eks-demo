@@ -15,13 +15,13 @@ variable "vpc-subnet-cidr" {
   description = "The VPC Subnet CIDR"
 }
 
-variable "private-subnet-cidr" {
+variable "private-subnets" {
   default     = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
   type        = list
   description = "Private Subnet CIDR"
 }
 
-variable "public-subnet-cidr" {
+variable "public-subnets" {
   default     = ["10.0.4.0/24", "10.0.5.0/24", "10.0.6.0/24"]
   type        = list
   description = "Public Subnet CIDR"

@@ -26,34 +26,12 @@ locals {
 data "aws_availability_zones" "available" {}
 
 #################################################################################
-# Backend
+# Remote State Config
 ##################################################################################
-resource "aws_s3_bucket" "terraform_state" {
-  bucket = "terraform-data-12345"
+
+module "remote-state-locking" {
+  source = "./modules/remote-state-locking"
   region = var.aws_region
-
-  versioning {
-    enabled = true
-  }
-  server_side_encryption_configuration {
-    rule {
-      apply_server_side_encryption_by_default {
-        sse_algorithm = "AES256"
-      }
-    }
-  }
-
-  #  lifecycle {
-  #    prevent_destroy = true
-  #  }
-}
-
-terraform {
-  backend "s3" {
-    bucket = "terraform-data-12345"
-    key    = "global/terraform.tfstate"
-    region = "us-east-2"
-  }
 }
 
 ##################################################################################

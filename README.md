@@ -26,3 +26,9 @@ $ terraform apply
 ```
 $ terraform destroy
 ```
+
+### IAM User Profile
+After running `terraform apply`, an encrypted password output is printed out. The encrypted password may be decrypted using the command line, for example: 
+```
+$ terraform output password | base64 --decode | keybase pgp decrypt
+```

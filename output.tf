@@ -29,3 +29,8 @@ output "this_iam_user_name" {
   description = "The user's name"
   value       = module.iam_user.this_iam_user_name
 }
+
+output "iam_user_encrypted_password" {
+  description = "The Encrypted password of the user"
+  value       = module.iam_group_admin.encrypted_password
+}

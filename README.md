@@ -4,6 +4,12 @@ Exploring Terraform on AWS using ArgoCD, Helm, ACM
 
 
 ## Getting Started
+
+### Requirements
+- AWS Cli
+- Helm v2.16 
+- argocd cli
+
 ### Configure AWS
 ```
 $ aws configure

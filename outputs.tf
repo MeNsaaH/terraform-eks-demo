@@ -35,11 +35,11 @@ output "iam_user_encrypted_password" {
   value       = module.iam_user.this_iam_access_key_encrypted_secret
 }
 
-
 output "keybase_password_decrypt_command" {
   description = "The Encrypted password of the user"
   value       = module.iam_user.keybase_password_decrypt_command
 }
+
 ###################################################################################
 # ACM
 ###################################################################################
@@ -48,6 +48,9 @@ output "certficate_arn" {
   value       = module.acm.this_acm_certificate_arn
 }
 
+###################################################################################
+# ArgoCD
+###################################################################################
 output "argocd_ingress_ip" {
   value       = "${var.argocd_domain}.${var.acm_domain_name}"
   description = "The Public AWS IP to the argocd Ingress Service"

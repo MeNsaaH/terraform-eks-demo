@@ -11,6 +11,8 @@ metadata:
     alb.ingress.kubernetes.io/certificate-arn: "${cert_arn}"
     external-dns.alpha.kubernetes.io/hostname: "${host_name}"
     alb.ingress.kubernetes.io/backend-protocol: HTTPS
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS":443}]'
+    alb.ingress.kubernetes.io/actions.ssl-redirect: '{"Type": "redirect", "RedirectConfig": { "Protocol": "HTTPS", "Port": "443", "StatusCode": "HTTP_301"}}'
 spec:
   rules:
   - host: "${host_name}"

@@ -185,7 +185,7 @@ module "acm" {
 }
 
 #################################################################################
-# ArgoCD 
+# ArgoCD Setup
 #################################################################################
 resource "null_resource" "install_argocd" {
   depends_on = [null_resource.install_helm]
@@ -224,6 +224,13 @@ resource "null_resource" "install_argocd_ingress" {
   provisioner "local-exec" {
     command = "cat <<EOL | kubectl apply -f - \n${data.template_file.argocd_ingress.rendered}"
   }
+
+  # Loadbalancer does not destroy since it is not created by Terraform but by kubectl.
+  # Destroy manually
+  provisioner "local-exec" {
+    when    = "destroy"
+    command = "cat <<EOL | kubectl delete -f - \n${data.template_file.argocd_ingress.rendered}"
+  }
 }
 
 resource "null_resource" "deploy_external_dns" {
@@ -255,3 +262,7 @@ resource "aws_route53_record" "argocd" {
   records    = [data.kubernetes_service.argocd_ingress.load_balancer_ingress.0.hostname]
 }
 
+
+#################################################################################
+# ArgoCD Applications
+#################################################################################

@@ -47,11 +47,13 @@ data "template_file" "remote_state" {
     remote_state_bucket = local.bucket_name
     bucket_region       = var.region
     bucket_key          = var.bucket_key
+    dynamodb_table      = local.dynamo_lock_name
+    use_lock            = var.use_lock
   }
 }
 
 resource "null_resource" "remote_state_locks" {
-  depends_on = [aws_dynamodb_table.terraform_locks, aws_s3_bucket.remote_state]
+  depends_on = [aws_s3_bucket.remote_state]
   provisioner "local-exec" {
     command = "sleep 20;cat > ${var.backend_output_path}<<EOL\n${data.template_file.remote_state.rendered}"
   }

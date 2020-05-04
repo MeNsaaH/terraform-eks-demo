@@ -4,7 +4,7 @@ output "bucket_name" {
 }
 
 output "dynamodb_table" {
-  value       = aws_dynamodb_table.terraform_locks.*.id[0]
+  value       = aws_dynamodb_table.terraform_locks.*.id
   description = "Dynamodb name"
 }
 

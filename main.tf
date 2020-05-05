@@ -108,7 +108,7 @@ module "eks" {
 
   worker_groups = [
     {
-      instance_type = "t3.small" # 2CPU, 2GO RAM
+      instance_type = "t3.medium" # 2CPU, 4GiB RAM
       asg_max_size  = 1
       public_ip     = true
     }

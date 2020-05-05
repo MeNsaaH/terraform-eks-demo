@@ -14,7 +14,7 @@ spec:
     chart: nginx-ingress
     helm:
       parameters:
-      - name:  service.type
+      - name:  controller.service.type
         value: NodePort
       releaseName: nginx-ingress
     repoURL: https://kubernetes-charts.storage.googleapis.com/

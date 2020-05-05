@@ -7,14 +7,15 @@ metadata:
   - resources-finalizer.argocd.argoproj.io
 spec:
   destination:
-    namespace: nginx
+    namespace: default
     server: https://kubernetes.default.svc
-  project: terraform-argocd
+  project: default
   source:
-    chart: nginx-stable
+    chart: nginx-ingress
     helm:
       parameters:
       - name:  service.type
         value: NodePort
-    repoURL: https://helm.nginx.com/stable
-    targetRevision: HEAD
+      releaseName: nginx-ingress
+    repoURL: https://kubernetes-charts.storage.googleapis.com/
+    targetRevision: 1.36.3

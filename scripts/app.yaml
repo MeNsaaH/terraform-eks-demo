@@ -7,9 +7,9 @@ spec:
   destination:
     namespace: default
     server: https://kubernetes.default.svc
-  project: terraform-argocd
+  project: default
   source:
-    path: deploy-argo
+    path: argocd
     repoURL: https://git.deimos.co.za/mensaah/terraform-trials.git
     targetRevision: HEAD
   syncPolicy:

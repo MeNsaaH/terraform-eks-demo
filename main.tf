@@ -20,7 +20,6 @@ locals {
   }
 }
 
-data "aws_availability_zones" "available" {}
 
 #################################################################################
 # Remote State Config
@@ -90,14 +89,6 @@ module "iam_group_admin" {
 # EKS
 ###################################################################################
 
-data "aws_eks_cluster" "cluster" {
-  name = module.eks.cluster_id
-}
-
-data "aws_eks_cluster_auth" "cluster" {
-  name = module.eks.cluster_id
-}
-
 provider "kubernetes" {
   host                   = data.aws_eks_cluster.cluster.endpoint
   cluster_ca_certificate = base64decode(data.aws_eks_cluster.cluster.certificate_authority.0.data)
@@ -162,11 +153,6 @@ resource "null_resource" "install_helm" {
 # ACM
 ##################################################################################
 
-data "aws_route53_zone" "this" {
-  name         = var.acm_domain_name
-  private_zone = false
-}
-
 module "acm" {
   source  = "terraform-aws-modules/acm/aws"
   version = "~> v2.0"
@@ -196,26 +182,11 @@ resource "null_resource" "install_argocd" {
 }
 
 # Expose ArgoCD service to be accessible over a LoadBalancer
-resource "null_resource" "configure_argocd" {
+resource "null_resource" "expose_argocd" {
   depends_on = [null_resource.install_argocd]
 
   provisioner "local-exec" {
     command = "kubectl patch svc argocd-server -n argocd -p '{\"spec\": {\"type\": \"LoadBalancer\"}}'"
-  }
-}
-
-data "template_file" "argocd_ingress" {
-  template = "${file("${path.module}/scripts/argocd_ingress.tpl")}"
-  vars = {
-    cert_arn  = module.acm.this_acm_certificate_arn
-    host_name = var.acm_domain_name
-  }
-}
-
-data "template_file" "external_dns" {
-  template = "${file("${path.module}/scripts/external_dns.tpl")}"
-  vars = {
-    domain_name = var.acm_domain_name
   }
 }
 
@@ -227,29 +198,29 @@ resource "null_resource" "install_argocd_ingress" {
 
   # Loadbalancer does not destroy since it is not created by Terraform but by kubectl.
   # Destroy manually
+  # BUG: Still not working
   provisioner "local-exec" {
     when    = "destroy"
     command = "cat <<EOL | kubectl delete -f - \n${data.template_file.argocd_ingress.rendered}"
   }
 }
 
-resource "null_resource" "deploy_external_dns" {
-  depends_on = [null_resource.install_argocd_ingress]
+# Create the secrets and config maps required for accessing repositories
+resource "null_resource" "setup_argocd" {
+  depends_on = [null_resource.install_argocd]
+
   provisioner "local-exec" {
-    command = "sleep 10; cat <<EOL | kubectl apply -f - \n${data.template_file.external_dns.rendered}"
+    command = "kubectl apply -f scripts/argocd"
   }
 }
-
 
 #################################################################################
 # Domain and DNS Setup
 #################################################################################
-
-data "kubernetes_service" "argocd_ingress" {
-  depends_on = [null_resource.install_argocd_ingress, null_resource.deploy_external_dns]
-  metadata {
-    name      = "argocd-server"
-    namespace = "argocd"
+resource "null_resource" "deploy_external_dns" {
+  depends_on = [null_resource.install_argocd_ingress]
+  provisioner "local-exec" {
+    command = "sleep 10; cat <<EOL | kubectl apply -f - \n${data.template_file.external_dns.rendered}"
   }
 }
 
@@ -266,3 +237,6 @@ resource "aws_route53_record" "argocd" {
 #################################################################################
 # ArgoCD Applications
 #################################################################################
+resource "null_resource" "deploy_argocd_applications" {
+}
+

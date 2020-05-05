@@ -52,7 +52,7 @@ output "certficate_arn" {
 # ArgoCD
 ###################################################################################
 output "argocd_ingress_ip" {
-  value       = "${var.argocd_domain}.${var.acm_domain_name}"
+  value       = "https://${var.argocd_domain}.${var.acm_domain_name}"
   description = "The Public AWS IP to the argocd Ingress Service"
 }
 

@@ -191,16 +191,17 @@ resource "null_resource" "expose_argocd" {
 }
 
 resource "null_resource" "install_argocd_ingress" {
-  depends_on = [null_resource.configure_argocd]
+  depends_on = [null_resource.expose_argocd]
   provisioner "local-exec" {
     command = "cat <<EOL | kubectl apply -f - \n${data.template_file.argocd_ingress.rendered}"
   }
 
   # Loadbalancer does not destroy since it is not created by Terraform but by kubectl.
   # Destroy manually
+  # https://github.com/terraform-providers/terraform-provider-aws/issues/9101
   # BUG: Still not working
   provisioner "local-exec" {
-    when    = "destroy"
+    when    = destroy
     command = "cat <<EOL | kubectl delete -f - \n${data.template_file.argocd_ingress.rendered}"
   }
 }
@@ -238,5 +239,13 @@ resource "aws_route53_record" "argocd" {
 # ArgoCD Applications
 #################################################################################
 resource "null_resource" "deploy_argocd_applications" {
-}
+  depends_on = [null_resource.install_argocd_ingress, null_resource.deploy_external_dns]
 
+  provisioner "local-exec" {
+    command = "scripts/install_argocd_apps.sh"
+
+    environment = {
+      ARGOCD_URL = data.kubernetes_service.argocd_ingress.load_balancer_ingress.0.hostname
+    }
+  }
+}

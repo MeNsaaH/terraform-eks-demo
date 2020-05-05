@@ -37,8 +37,8 @@ module "remote_state_locking" {
 |------|-------------|------|---------|:--------:|
 | backend\_output\_path | The default file to output backend configuration to | `string` | `"./backend.tf"` | no |
 | bucket\_key | The Key to store bucket in | `string` | `"global/terrform.tfstate"` | no |
-| bucket\_name | Name of bucket | `string` | `""` | no |
-| dynamo\_lock\_name | Name of bucket | `string` | `""` | no |
+| bucket\_name | Name of bucket. It is generated using random resource is not specified with prefix `terraform-state`| `string` | `""` | no |
+| dynamo\_lock\_name | Name of bucket. It is generated using random resource is not specified with prefix `terraform-state-lock` | `string` | `""` | no |
 | enable\_versioning | enables versioning for objects in the S3 bucket | `bool` | `true` | no |
 | force\_destroy | Whether to allow a forceful destruction of this bucket | `bool` | `false` | no |
 | region | Region of for remote state bucket | `any` | n/a | yes |

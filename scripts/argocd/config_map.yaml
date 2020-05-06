@@ -8,7 +8,7 @@ metadata:
     app.kubernetes.io/part-of: argocd
 data:
   repositories: |
-    - url: https://git.deimos.co.za/mensaah/terraform-trials.git
+    - url: https://git.deimos.co.za/mensaah/gitops.git
       passwordSecret:
         name: argocd-repo-credentials
         key: password

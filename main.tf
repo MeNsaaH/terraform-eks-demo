@@ -26,7 +26,7 @@ locals {
 ##################################################################################
 
 module "remote_state_locking" {
-  source   = "./modules/remote-state-locking"
+  source   = "git::https://git.deimos.co.za/terraform-modules/terraform-remote-state?ref=v0.1.0"
   region   = var.aws_region
   use_lock = false
 }
@@ -125,19 +125,6 @@ resource "null_resource" "update_kubeconfig" {
 }
 
 ##################################################################################
-# ALB Ingress Controller
-##################################################################################
-
-resource "null_resource" "install_aws_alb_ingress_controller" {
-  depends_on = [null_resource.install_helm]
-
-  # sleep 60 seconds and wait for helm tiller deployed
-  provisioner "local-exec" {
-    command = "sleep 60;helm repo add incubator http://storage.googleapis.com/kubernetes-charts-incubator; helm install incubator/aws-alb-ingress-controller --name aws-alb-ingress-controller --set autoDiscoverAwsRegion=true --set autoDiscoverAwsVpcID=true --set clusterName=${local.cluster_name}"
-  }
-}
-
-##################################################################################
 # Helm 
 ##################################################################################
 
@@ -146,6 +133,25 @@ resource "null_resource" "install_helm" {
 
   provisioner "local-exec" {
     command = "kubectl apply -f ./k8s/tiller-user.yaml && helm init --service-account tiller"
+  }
+}
+
+##################################################################################
+# ALB Ingress Controller
+##################################################################################
+
+resource "null_resource" "install_aws_alb_ingress_controller" {
+  depends_on = [null_resource.install_helm]
+
+  # sleep 60 seconds and wait for helm tiller deployed
+  provisioner "local-exec" {
+    when    = create
+    command = "sleep 60;helm repo add incubator http://storage.googleapis.com/kubernetes-charts-incubator; helm install incubator/aws-alb-ingress-controller --name aws-alb-ingress-controller --set autoDiscoverAwsRegion = true --set autoDiscoverAwsVpcID = true --set clusterName = ${local.cluster_name}"
+  }
+
+  provisioner "local-exec" {
+    command = "helm uninstall aws-alb-ingress-controller"
+    when    = destroy
   }
 }
 
@@ -192,17 +198,9 @@ resource "null_resource" "expose_argocd" {
 
 resource "null_resource" "install_argocd_ingress" {
   depends_on = [null_resource.expose_argocd]
+
   provisioner "local-exec" {
     command = "cat <<EOL | kubectl apply -f - \n${data.template_file.argocd_ingress.rendered}"
-  }
-
-  # Loadbalancer does not destroy since it is not created by Terraform but by kubectl.
-  # Destroy manually: Destroy created Loadbalancer and it's associated security groups
-  # https://github.com/terraform-providers/terraform-provider-aws/issues/9101
-  # BUG: Still not working
-  provisioner "local-exec" {
-    when    = destroy
-    command = "cat <<EOL | kubectl delete -f - \n${data.template_file.argocd_ingress.rendered}"
   }
 }
 
@@ -241,11 +239,15 @@ resource "aws_route53_record" "argocd" {
 resource "null_resource" "deploy_argocd_applications" {
   depends_on = [aws_route53_record.argocd]
 
+  # Install ArgoCD apps from git repo
   provisioner "local-exec" {
-    command = "scripts/install_argocd_apps.sh"
+    command = "kubectl apply -f \"https://git.deimos.co.za/api/v4/projects/101/repository/files/app.yaml/raw?private_token=${var.private_deploy_token}&ref=master\""
+    #    when    = create
+  }
 
-    environment = {
-      ARGOCD_URL = data.kubernetes_service.argocd_ingress.load_balancer_ingress.0.hostname
-    }
+  # Destroy all created resource by argocd during destruction
+  provisioner "local-exec" {
+    command = "kubectl delete -f \"https://git.deimos.co.za/api/v4/projects/101/repository/files/app.yaml/raw?private_token=${var.private_deploy_token}&ref=master\""
+    when    = destroy
   }
 }

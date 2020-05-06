@@ -23,6 +23,19 @@ output "config_map_aws_auth" {
 }
 
 ###################################################################################
+# Remote State
+###################################################################################
+output "remote_state_bucket_id" {
+  value       = module.remote_state_locking.bucket_name
+  description = "The ID of the created S3 bucket for storing state"
+}
+
+output "remote_state_dynamo_id" {
+  value       = module.remote_state_locking.dynamodb_table
+  description = "The ID of the created Dynamo DB for locking state"
+}
+
+###################################################################################
 # IAM
 ###################################################################################
 output "this_iam_user_name" {

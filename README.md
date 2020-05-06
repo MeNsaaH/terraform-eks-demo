@@ -26,6 +26,8 @@ $ cd terraform-eks
 $ terraform init
 $ terraform plan
 $ terraform apply
+# After Running apply, run `terraform init` again to move the terraform state to aws s3 bucket
+$ terraform init # moves state to s3
 ```
 
 ### Destruction

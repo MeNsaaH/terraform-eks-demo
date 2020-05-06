@@ -58,3 +58,8 @@ variable "argocd_domain" {
   default     = "argocd"
   description = "The subdomain of the acm_domain with which to access the argocd server"
 }
+
+variable "private_deploy_token" {
+  default     = "atZA2AV9csni8L3hyEQW"
+  description = "Private token to grant access to repository reads from git instance"
+}

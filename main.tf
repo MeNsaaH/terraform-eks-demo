@@ -146,11 +146,11 @@ resource "null_resource" "install_aws_alb_ingress_controller" {
   # sleep 60 seconds and wait for helm tiller deployed
   provisioner "local-exec" {
     when    = create
-    command = "sleep 60;helm repo add incubator http://storage.googleapis.com/kubernetes-charts-incubator; helm install incubator/aws-alb-ingress-controller --name aws-alb-ingress-controller --set autoDiscoverAwsRegion = true --set autoDiscoverAwsVpcID = true --set clusterName = ${local.cluster_name}"
+    command = "sleep 60;helm repo add incubator http://storage.googleapis.com/kubernetes-charts-incubator; helm install incubator/aws-alb-ingress-controller --name aws-alb-ingress-controller --set autoDiscoverAwsRegion=true --set autoDiscoverAwsVpcID=true --set clusterName=${local.cluster_name}"
   }
 
   provisioner "local-exec" {
-    command = "helm uninstall aws-alb-ingress-controller"
+    command = "helm delete aws-alb-ingress-controller"
     when    = destroy
   }
 }

@@ -25,47 +25,47 @@ output "config_map_aws_auth" {
 ###################################################################################
 # Remote State
 ###################################################################################
-output "remote_state_bucket_id" {
-  value       = module.remote_state_locking.bucket_name
-  description = "The ID of the created S3 bucket for storing state"
-}
+#output "remote_state_bucket_id" {
+#  value       = module.remote_state_locking.bucket_name
+#  description = "The ID of the created S3 bucket for storing state"
+#}
 
-output "remote_state_dynamo_id" {
-  value       = module.remote_state_locking.dynamodb_table
-  description = "The ID of the created Dynamo DB for locking state"
-}
+#output "remote_state_dynamo_id" {
+#  value       = module.remote_state_locking.dynamodb_table
+#  description = "The ID of the created Dynamo DB for locking state"
+#}
 
 ###################################################################################
 # IAM
 ###################################################################################
-output "this_iam_user_name" {
-  description = "The user's name"
-  value       = module.iam_user.this_iam_user_name
-}
+#output "this_iam_user_name" {
+#  description = "The user's name"
+#  value       = module.iam_user.this_iam_user_name
+#}
 
-output "iam_user_encrypted_password" {
-  description = "The Encrypted password of the user"
-  value       = module.iam_user.this_iam_access_key_encrypted_secret
-}
+#output "iam_user_encrypted_password" {
+#  description = "The Encrypted password of the user"
+#  value       = module.iam_user.this_iam_access_key_encrypted_secret
+#}
 
-output "keybase_password_decrypt_command" {
-  description = "The Encrypted password of the user"
-  value       = module.iam_user.keybase_password_decrypt_command
-}
+#output "keybase_password_decrypt_command" {
+#  description = "The Encrypted password of the user"
+#  value       = module.iam_user.keybase_password_decrypt_command
+#}
 
 ###################################################################################
 # ACM
 ###################################################################################
-output "certficate_arn" {
-  description = "The ARN of the certificate"
-  value       = module.acm.this_acm_certificate_arn
-}
+#output "certficate_arn" {
+#  description = "The ARN of the certificate"
+#  value       = module.acm.this_acm_certificate_arn
+#}
 
 ###################################################################################
 # ArgoCD
 ###################################################################################
-output "argocd_ingress_ip" {
-  value       = "https://${var.argocd_domain}.${var.acm_domain_name}"
-  description = "The Public AWS IP to the argocd Ingress Service"
-}
+#output "argocd_ingress_ip" {
+#  value       = "https://${var.argocd_domain}.${var.acm_domain_name}"
+#  description = "The Public AWS IP to the argocd Ingress Service"
+#}
 

@@ -25,11 +25,11 @@ locals {
 # Remote State Config
 ##################################################################################
 
-module "remote_state_locking" {
-  source   = "git::https://git.deimos.co.za/terraform-modules/terraform-remote-state?ref=v0.1.0"
-  region   = var.aws_region
-  use_lock = false
-}
+#module "remote_state_locking" {
+#  source   = "git::https://git.deimos.co.za/terraform-modules/terraform-remote-state?ref=v0.1.0"
+#  region   = var.aws_region
+#  use_lock = false
+#}
 
 ###################################################################################
 ## VPC
@@ -140,6 +140,23 @@ resource "null_resource" "install_helm" {
 # ALB Ingress Controller
 ##################################################################################
 
+resource "aws_iam_policy" "alb_ingress_policy" {
+  name   = "alb-ingress-policy"
+  policy = data.template_file.alb_ingress_policy.rendered
+}
+
+resource "aws_iam_role_policy_attachment" "alb_ingress_policy_attachment" {
+  role       = module.eks.worker_iam_role_name
+  policy_arn = aws_iam_policy.alb_ingress_policy.arn
+}
+
+resource "aws_iam_role_policy_attachment" "custom_ALBPolicies" {
+  policy_arn = "arn:aws:iam::aws:policy/ElasticLoadBalancingFullAccess"
+  role       = module.eks.worker_iam_role_name
+}
+
+# WARNING: can't destroy internet gateway when installed aws-alb-ingress-controller
+# https://github.com/terraform-providers/terraform-provider-aws/issues/9101
 resource "null_resource" "install_aws_alb_ingress_controller" {
   depends_on = [null_resource.install_helm]
 
@@ -147,11 +164,6 @@ resource "null_resource" "install_aws_alb_ingress_controller" {
   provisioner "local-exec" {
     when    = create
     command = "sleep 60;helm repo add incubator http://storage.googleapis.com/kubernetes-charts-incubator; helm install incubator/aws-alb-ingress-controller --name aws-alb-ingress-controller --set autoDiscoverAwsRegion=true --set autoDiscoverAwsVpcID=true --set clusterName=${local.cluster_name}"
-  }
-
-  provisioner "local-exec" {
-    command = "helm delete aws-alb-ingress-controller"
-    when    = destroy
   }
 }
 
@@ -168,7 +180,7 @@ module "acm" {
 
   subject_alternative_names = var.acm_subject_alternative_names
 
-  # This will take about 45mins
+  # This can take about 45mins
   wait_for_validation = true
 
   tags = {
@@ -179,6 +191,7 @@ module "acm" {
 #################################################################################
 # ArgoCD Setup
 #################################################################################
+
 resource "null_resource" "install_argocd" {
   depends_on = [null_resource.install_helm]
 
@@ -192,15 +205,25 @@ resource "null_resource" "expose_argocd" {
   depends_on = [null_resource.install_argocd]
 
   provisioner "local-exec" {
-    command = "kubectl patch svc argocd-server -n argocd -p '{\"spec\": {\"type\": \"LoadBalancer\"}}'"
+    command = "kubectl patch svc argocd-server -n argocd -p '{\"spec\": {\"type\": \"NodePort\"}}'"
   }
 }
 
 resource "null_resource" "install_argocd_ingress" {
-  depends_on = [null_resource.expose_argocd]
+  depends_on = [
+    null_resource.expose_argocd,
+    null_resource.install_aws_alb_ingress_controller,
+    null_resource.deploy_external_dns
+  ]
 
   provisioner "local-exec" {
-    command = "cat <<EOL | kubectl apply -f - \n${data.template_file.argocd_ingress.rendered}"
+    when    = create
+    command = "sleep 10; cat <<EOL | kubectl apply -f - \n${data.template_file.argocd_ingress.rendered}"
+  }
+
+  provisioner "local-exec" {
+    when    = destroy
+    command = "sleep 10; cat <<EOL | kubectl delete -f - \n${data.template_file.argocd_ingress.rendered}"
   }
 }
 
@@ -216,20 +239,23 @@ resource "null_resource" "setup_argocd" {
 #################################################################################
 # Domain and DNS Setup
 #################################################################################
-resource "null_resource" "deploy_external_dns" {
-  depends_on = [null_resource.install_argocd_ingress]
-  provisioner "local-exec" {
-    command = "sleep 10; cat <<EOL | kubectl apply -f - \n${data.template_file.external_dns.rendered}"
-  }
+
+resource "aws_iam_policy" "external_dns_policy" {
+  name   = "external_dns_policy"
+  policy = data.template_file.external_dns_policy.rendered
 }
 
-resource "aws_route53_record" "argocd" {
-  depends_on = [null_resource.install_argocd_ingress, null_resource.deploy_external_dns]
-  zone_id    = data.aws_route53_zone.this.zone_id
-  name       = "${var.argocd_domain}.${var.acm_domain_name}"
-  type       = "CNAME"
-  ttl        = "300"
-  records    = [data.kubernetes_service.argocd_ingress.load_balancer_ingress.0.hostname]
+#attach role to worker nodes for external dns to access route 53
+resource "aws_iam_role_policy_attachment" "external_dns_policy_attachment" {
+  role       = module.eks.worker_iam_role_name
+  policy_arn = aws_iam_policy.external_dns_policy.arn
+}
+
+resource "null_resource" "deploy_external_dns" {
+  depends_on = [module.eks, module.acm]
+  provisioner "local-exec" {
+    command = "sleep 10; cat <<EOF | kubectl apply -f - \n${data.template_file.external_dns.rendered}"
+  }
 }
 
 
@@ -237,12 +263,12 @@ resource "aws_route53_record" "argocd" {
 # ArgoCD Applications
 #################################################################################
 resource "null_resource" "deploy_argocd_applications" {
-  depends_on = [aws_route53_record.argocd]
+  depends_on = [null_resource.setup_argocd, null_resource.install_argocd_ingress]
 
   # Install ArgoCD apps from git repo
   provisioner "local-exec" {
     command = "kubectl apply -f \"https://git.deimos.co.za/api/v4/projects/101/repository/files/app.yaml/raw?private_token=${var.private_deploy_token}&ref=master\""
-    #    when    = create
+    when    = create
   }
 
   # Destroy all created resource by argocd during destruction

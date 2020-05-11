@@ -22,6 +22,12 @@ data "aws_route53_zone" "this" {
   private_zone = false
 }
 
+##################################################################################
+# ALB
+##################################################################################
+data "template_file" "alb_ingress_policy" {
+  template = "${file("./scripts/alb_ingress_policy.tpl")}"
+}
 
 ##################################################################################
 # ArgoCD
@@ -30,9 +36,13 @@ data "template_file" "argocd_ingress" {
   template = "${file("${path.module}/scripts/argocd_ingress.tpl")}"
   vars = {
     cert_arn  = module.acm.this_acm_certificate_arn
-    host_name = var.acm_domain_name
+    host_name = "${var.argocd_domain}.${var.acm_domain_name}"
   }
 }
+
+##################################################################################
+# External DNS
+##################################################################################
 
 data "template_file" "external_dns" {
   template = "${file("${path.module}/scripts/external_dns.tpl")}"
@@ -41,11 +51,7 @@ data "template_file" "external_dns" {
   }
 }
 
-data "kubernetes_service" "argocd_ingress" {
-  depends_on = [null_resource.install_argocd_ingress, null_resource.deploy_external_dns]
-  metadata {
-    name      = "argocd-server"
-    namespace = "argocd"
-  }
+data "template_file" "external_dns_policy" {
+  template = "${file("./scripts/external_dns_policy.tpl")}"
 }
 

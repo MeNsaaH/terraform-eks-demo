@@ -32,8 +32,10 @@ $ terraform init # moves state to s3
 
 ### Destruction
 ```
+$ terraform destroy -target module.helm_agones.helm_release.agones -auto-approve && sleep 60
 $ terraform destroy
 ```
+There is an issue with the AWS Terraform provider: https://github.com/terraform-providers/terraform-provider-aws/issues/9101. Due to this issue you should remove helm release first (as stated above), otherwise terraform destroy will timeout and never succeed. Remove all created resources manually in that case, namely: 3 Auto Scaling groups, EKS cluster, and a VPC with all dependent resources
 
 ### IAM User Profile
 After running `terraform apply`, an encrypted password output is printed out. The encrypted password may be decrypted using the command line, for example: 

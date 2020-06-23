@@ -54,4 +54,3 @@ data "template_file" "external_dns" {
 data "template_file" "external_dns_policy" {
   template = "${file("./scripts/external_dns_policy.tpl")}"
 }
-

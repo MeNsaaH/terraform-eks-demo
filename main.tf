@@ -25,11 +25,11 @@ locals {
 # Remote State Config
 ##################################################################################
 
-#module "remote_state_locking" {
-#  source   = "git::https://git.deimos.co.za/terraform-modules/terraform-remote-state?ref=v0.1.0"
-#  region   = var.aws_region
-#  use_lock = false
-#}
+module "remote_state_locking" {
+  source   = "../modules/remote-state-locking"
+  region   = var.aws_region
+  use_lock = false
+}
 
 ###################################################################################
 ## VPC
@@ -125,7 +125,7 @@ resource "null_resource" "update_kubeconfig" {
 }
 
 ##################################################################################
-# Helm 
+# Helm
 ##################################################################################
 
 resource "null_resource" "install_helm" {
@@ -267,13 +267,13 @@ resource "null_resource" "deploy_argocd_applications" {
 
   # Install ArgoCD apps from git repo
   provisioner "local-exec" {
-    command = "kubectl apply -f \"https://git.deimos.co.za/api/v4/projects/101/repository/files/app.yaml/raw?private_token=${var.private_deploy_token}&ref=master\""
+    command = "kubectl apply -f \"https://raw.githubusercontent.com/MeNsaaH/gitops-demo/master/app.yaml\""
     when    = create
   }
 
   # Destroy all created resource by argocd during destruction
   provisioner "local-exec" {
-    command = "kubectl delete -f \"https://git.deimos.co.za/api/v4/projects/101/repository/files/app.yaml/raw?private_token=${var.private_deploy_token}&ref=master\""
+    command = "kubectl delete -f \"https://raw.githubusercontent.com/MeNsaaH/gitops-demo/master/app.yaml\""
     when    = destroy
   }
 }
